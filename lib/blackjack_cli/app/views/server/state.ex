@@ -12,8 +12,9 @@ defmodule BlackjackCli.Views.Server.State do
 
   def update(model, msg) do
     case msg do
-      {:event, :subscribe_server} ->
-        model
+      {:event, %{"server" => _} = server} ->
+        # IO.puts("RECEIVED SERVER UPDATE SIGNAL")
+        %{model | data: server}
 
       {:event, %{key: @tab}} ->
         switch_menus(model)
@@ -51,24 +52,11 @@ defmodule BlackjackCli.Views.Server.State do
 
           %{model | screen: :server, data: []}
         else
-          %{"server" => %{"server_name" => server_name}} = model.data |> IO.inspect()
+          %{"server" => %{"server_name" => server_name}} = model.data
+          BlackjackCli.leave_server(model.user, server_name, model.token)
+          servers = BlackjackCli.get_servers(model.token)
 
-          case match_menu(model) do
-            :reload ->
-              %{
-                model
-                | data: BlackjackCli.get_server(server_name)
-              }
-
-            :servers ->
-              # BlackjackCli.leave_server(model.user.username, server_name)
-              %{"body" => body} = BlackjackCli.get_servers()
-
-              %{model | screen: match_menu(model), input: 0, data: body}
-
-            _ ->
-              %{model | screen: match_menu(model), input: ""}
-          end
+          %{model | screen: match_menu(model), input: 0, data: servers}
         end
 
       _ ->
@@ -77,7 +65,7 @@ defmodule BlackjackCli.Views.Server.State do
   end
 
   defp menu do
-    [:reload, :create_table, :find_table, :servers]
+    [:create_table, :find_table, :servers]
   end
 
   defp match_menu(model) do
@@ -89,7 +77,7 @@ defmodule BlackjackCli.Views.Server.State do
     # Setup to list tables
     list_servers =
       if Enum.count(model.data) > 0 and model.menu == false do
-        %{"body" => body} = BlackjackCli.get_servers()
+        %{data: %{body: body}} = BlackjackCli.get_servers(model.token)
 
         body
       else

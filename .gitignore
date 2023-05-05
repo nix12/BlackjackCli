@@ -24,3 +24,5 @@ blackjack_cli-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+output_test

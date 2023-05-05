@@ -2,7 +2,6 @@ defmodule BlackjackCli.Views.Login.LoginForm do
   @moduledoc """
     Holds state for the login view.
   """
-
   use GenServer
 
   @registry Registry.App
@@ -50,10 +49,9 @@ defmodule BlackjackCli.Views.Login.LoginForm do
   @doc """
     Initialize form process
   """
-  @spec init(any) :: {:ok, %{errors: <<>>, password: <<>>, tab_count: 0, username: <<>>}}
   @impl true
   def init(_) do
-    {:ok, %{tab_count: 0, username: "", password: "", errors: ""}}
+    {:ok, %{tab_count: 0, email: "", password: "", errors: ""}}
   end
 
   @impl true

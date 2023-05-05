@@ -8,36 +8,35 @@ defmodule BlackjackCli.Views.Menu do
   def render(model) do
     view do
       panel title: "BLACKJACK" do
-        if model.input == 0 do
-          label(content: "1) Servers", background: :white, color: :black)
-        else
-          label(content: "1) Servers")
+        row do
+          column size: 6 do
+            panel do
+              label do
+                text(content: "USERNAME: " <> (model.user["username"] |> to_string()))
+              end
+            end
+          end
+
+          column size: 6 do
+            panel do
+              label do
+                text(content: "CURRENCY: N/A")
+              end
+            end
+          end
         end
 
-        if model.input == 1 do
-          label(content: "2) Search", background: :white, color: :black)
-        else
-          label(content: "2) Search")
-        end
-
-        if model.input == 2 do
-          label(content: "3) Account", background: :white, color: :black)
-        else
-          label(content: "3) Account")
-        end
-
-        if model.input == 3 do
-          label(content: "4) Settings", background: :white, color: :black)
-        else
-          label(content: "4) Settings")
-        end
-
-        if model.input == 4 do
-          label(content: "5) Exit", background: :white, color: :black)
-        else
-          label(content: "5) Exit")
+        for {option, i} <- menu() |> Enum.with_index() do
+          if model.input == i do
+            label(content: "#{i + 1}) #{option}", background: :white, color: :black)
+          else
+            label(content: "#{i + 1}) #{option}")
+          end
         end
       end
     end
   end
+
+  defp menu,
+    do: ["Servers", "Search", "Friends", "Inbox", "Account", "Settings", "Exit"]
 end

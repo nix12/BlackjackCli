@@ -81,7 +81,7 @@ defmodule BlackjackCli.Views.Login.State do
   defp update_user(%{input: input, screen: screen} = model) do
     case LoginForm.get_field(:tab_count) do
       0 ->
-        LoginForm.update_field(:username, input)
+        LoginForm.update_field(:email, input)
         %{model | input: input, screen: screen}
 
       1 ->
@@ -98,45 +98,50 @@ defmodule BlackjackCli.Views.Login.State do
   end
 
   defp login_request(user_params) do
-    %{body: body, status: status} = BlackjackCli.login_path(user_params)
-
-    {:ok, status, body}
+    %{headers: headers, status: status} = BlackjackCli.login_path(user_params)
+    # IO.inpsect(headers, label: "RESPONSE")
+    {:ok, status, headers}
   end
 
-  defp login_verify(model, status, resource) do
+  defp login_verify(model, status, [{"authorization", "Bearer " <> token} | _headers]) do
     case status do
       status when status >= 200 and status < 300 ->
         LoginForm.close_form()
 
-        Node.start(:"#{resource["current_user"]["uuid"]}", :shortnames)
+        current_user =
+          for(binary <- token |> decode(), do: <<binary::utf8>>)
+          |> Enum.join()
+          |> Jason.decode!()
+
+        BlackjackCli.connect_user(current_user["user"], token)
 
         %{
           model
           | screen: :menu,
-            key: resource["key"],
+            token: token,
             input: 0,
-            user: resource["current_user"],
+            user: current_user["user"],
             menu: true
         }
 
       _ ->
-        LoginForm.update_field(:errors, resource["errors"])
-        %{model | screen: :login, key: ""}
+        #        LoginForm.update_field(:errors, resource["errors"])
+        %{model | screen: :login, token: ""}
     end
   end
 
   defp login(model) do
     user_params = %{
       user: %{
-        username: LoginForm.get_field(:username),
+        email: LoginForm.get_field(:email),
         password_hash: LoginForm.get_field(:password)
       }
     }
 
-    with :ok <- validate_username(user_params.user.username),
+    with :ok <- validate_email(user_params.user.email),
          :ok <- validate_password(user_params.user.password_hash),
-         {:ok, status, resource} <- login_request(user_params) do
-      login_verify(model, status, resource)
+         {:ok, status, headers} <- login_request(user_params) do
+      login_verify(model, status, headers)
     else
       {:error, message} ->
         LoginForm.update_field(:errors, message)
@@ -144,10 +149,10 @@ defmodule BlackjackCli.Views.Login.State do
     end
   end
 
-  defp validate_username(username) do
-    case BlackjackCli.blank?(username) do
+  defp validate_email(email) do
+    case BlackjackCli.blank?(email) do
       true ->
-        {:error, "username cannot be blank."}
+        {:error, "email cannot be blank."}
 
       _ ->
         :ok
@@ -180,10 +185,10 @@ defmodule BlackjackCli.Views.Login.State do
   defp delete_input(model) do
     case LoginForm.get_field(:tab_count) do
       0 ->
-        username = LoginForm.get_field(:username)
+        email = LoginForm.get_field(:email)
 
-        LoginForm.update_field(:username, "")
-        update_user(%{model | input: String.slice(username, 0..-2)})
+        LoginForm.update_field(:email, "")
+        update_user(%{model | input: String.slice(email, 0..-2)})
 
       1 ->
         password = LoginForm.get_field(:password)
@@ -221,5 +226,15 @@ defmodule BlackjackCli.Views.Login.State do
       _ ->
         %{model | menu: true, input: 0}
     end
+  end
+
+  defp decode(token) do
+    token
+    |> String.split(".")
+    |> Enum.at(1)
+    |> String.replace("-", "+", global: true)
+    |> String.replace("_", "/", global: true)
+    |> Base.decode64!(padding: false)
+    |> :binary.bin_to_list()
   end
 end

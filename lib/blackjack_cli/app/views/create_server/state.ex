@@ -23,18 +23,15 @@ defmodule BlackjackCli.Views.CreateServer.State do
         %{model | input: model.input <> <<ch::utf8>>}
 
       {:event, %{key: @enter}} ->
-        {:ok, response} =
-          :gun.post(
-            BlackjackCli.blackjack_api() <> "/server/create",
-            [{"Content-Type", "application/json"}],
-            Jason.encode!(%{server: %{server_name: model.input}, current_user: model.user})
+        response =
+          GenServer.call(
+            BlackjackCli.via_tuple(Registry.App, :http),
+            {:http_post, "/server/create", %{server: %{server_name: model.input}}, model.token}
           )
 
         case response do
-          {:ok, %{"body" => body}} ->
-            %{"body" => body} = BlackjackCli.get_servers()
-
-            %{model | input: 0, screen: :servers, data: body}
+          %{body: %{"server" => _server}} ->
+            %{model | input: 0, screen: :servers, data: BlackjackCli.get_servers(model.token)}
 
           {:error, _server} ->
             %{model | input: model.input, screen: :create_server}

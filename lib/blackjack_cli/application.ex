@@ -4,18 +4,17 @@ defmodule BlackjackCli.Application do
 
   @impl true
   def start(_type, _args) do
+    Application.ensure_all_started(:ratatouille)
+
     children = [
-      {Cluster.Supervisor,
-       [Application.get_env(:libcluster, :topologies), [name: BlackjackCli.ClusterSupervisor]]},
       {Registry, keys: :unique, name: Registry.App},
-      {BlackjackCli.GuiServer, name: GuiServer},
-      {Task.Supervisor, name: Blackjack.TaskSupervisor},
-      gui(),
-      # {BlackjackCli.HttpClientSupervisor, []},
+      {Task.Supervisor, name: BlackjackCli.TaskSupervisor},
       BlackjackCli.HttpClientSupervisor.child_spec(:http),
-      BlackjackCli.HttpClientSupervisor.child_spec(:ws)
+      BlackjackCli.HttpClientSupervisor.child_spec(:ws),
+      gui()
     ]
 
+    # IO.inpsect(self(), label: "SELF")
     opts = [strategy: :one_for_one, name: BlackjackCli.Supervisor]
     Supervisor.start_link(children, opts)
   end

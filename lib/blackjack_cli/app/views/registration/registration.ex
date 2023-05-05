@@ -23,11 +23,25 @@ defmodule BlackjackCli.Views.Registration do
         panel title: "Register" do
           row do
             column size: 12 do
+              panel title: "EMAIL" do
+                label do
+                  text(content: RegistrationForm.get_field(:email))
+
+                  if RegistrationForm.get_field(:tab_count) == 0 do
+                    text(content: "W", color: :white, background: :white)
+                  end
+                end
+              end
+            end
+          end
+
+          row do
+            column size: 12 do
               panel title: "USERNAME" do
                 label do
                   text(content: RegistrationForm.get_field(:username))
 
-                  if RegistrationForm.get_field(:tab_count) == 0 do
+                  if RegistrationForm.get_field(:tab_count) == 1 do
                     text(content: "W", color: :white, background: :white)
                   end
                 end
@@ -41,7 +55,7 @@ defmodule BlackjackCli.Views.Registration do
                 label do
                   text(content: RegistrationForm.get_field(:password))
 
-                  if RegistrationForm.get_field(:tab_count) == 1 do
+                  if RegistrationForm.get_field(:tab_count) == 2 do
                     text(content: "W", color: :white, background: :white)
                   end
                 end
@@ -53,7 +67,7 @@ defmodule BlackjackCli.Views.Registration do
                 label do
                   text(content: RegistrationForm.get_field(:password_confirmation))
 
-                  if RegistrationForm.get_field(:tab_count) == 2 do
+                  if RegistrationForm.get_field(:tab_count) == 3 do
                     text(content: "W", color: :white, background: :white)
                   end
                 end

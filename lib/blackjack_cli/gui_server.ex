@@ -20,7 +20,7 @@ defmodule BlackjackCli.GuiServer do
       menu: true,
       user: nil,
       screen: :start,
-      key: nil,
+      token: nil,
       data: []
     }
 

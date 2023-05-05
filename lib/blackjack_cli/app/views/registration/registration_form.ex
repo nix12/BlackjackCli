@@ -59,6 +59,7 @@ defmodule BlackjackCli.Views.Registration.RegistrationForm do
              password: <<>>,
              password_confirmation: <<>>,
              tab_count: 0,
+             email: <<>>,
              username: <<>>
            }}
   @impl true
@@ -66,6 +67,7 @@ defmodule BlackjackCli.Views.Registration.RegistrationForm do
     {:ok,
      %{
        tab_count: 0,
+       email: "",
        username: "",
        password: "",
        password_confirmation: "",

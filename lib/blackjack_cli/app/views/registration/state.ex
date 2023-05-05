@@ -86,18 +86,22 @@ defmodule BlackjackCli.Views.Registration.State do
   defp update_user(%{input: input, screen: screen} = model) do
     case RegistrationForm.get_field(:tab_count) do
       0 ->
-        RegistrationForm.update_field(:username, input)
+        RegistrationForm.update_field(:email, input)
         %{model | input: input, screen: screen}
 
       1 ->
-        RegistrationForm.update_field(:password, input)
+        RegistrationForm.update_field(:username, input)
         %{model | input: input, screen: screen}
 
       2 ->
-        RegistrationForm.update_field(:password_confirmation, input)
+        RegistrationForm.update_field(:password, input)
         %{model | input: input, screen: screen}
 
       3 ->
+        RegistrationForm.update_field(:password_confirmation, input)
+        %{model | input: input, screen: screen}
+
+      4 ->
         tab_menu(model)
 
       _ ->
@@ -107,19 +111,20 @@ defmodule BlackjackCli.Views.Registration.State do
   end
 
   defp register_request(user_params) do
-    %{"body" => body, status_code: status} = BlackjackCli.register_path(user_params)
-    {:ok, status, Jason.decode!(body)}
+    %{status: status, body: body} = BlackjackCli.register_path(user_params)
+    {:ok, status, body}
   end
 
   defp login_request(user_params) do
-    %{"body" => body, status_code: status} = BlackjackCli.login_path(user_params)
+    %{body: body, status: status, headers: headers} = BlackjackCli.login_path(user_params)
 
-    {:ok, status, body}
+    {:ok, status, body, headers}
   end
 
   defp register_verify(model, status, user) do
     user_params = %{
       user: %{
+        email: RegistrationForm.get_field(:email),
         username: RegistrationForm.get_field(:username),
         password_hash: RegistrationForm.get_field(:password)
       }
@@ -127,7 +132,9 @@ defmodule BlackjackCli.Views.Registration.State do
 
     case status do
       success when success >= 200 and success < 300 ->
-        {:ok, _status, body} = login_request(user_params)
+        {:ok, _status, body, [{"authorization", "Bearer " <> token} | _headers]} =
+          login_request(user_params)
+
         LoginForm.start_link(:ok)
         RegistrationForm.close_form()
 
@@ -135,7 +142,7 @@ defmodule BlackjackCli.Views.Registration.State do
           model
           | input: 0,
             screen: :menu,
-            key: body["key"],
+            token: token,
             user: body["current_user"]
         }
 
@@ -151,12 +158,14 @@ defmodule BlackjackCli.Views.Registration.State do
 
     user_params = %{
       user: %{
+        email: RegistrationForm.get_field(:email),
         username: RegistrationForm.get_field(:username),
         password_hash: password
       }
     }
 
-    with :ok <- validate_username(user_params.user.username),
+    with :ok <- validate_email(user_params.user.email),
+         :ok <- validate_username(user_params.user.username),
          :ok <- validate_password(password, password_confirmation),
          {:ok, status, body} <- register_request(user_params) do
       register_verify(model, status, body)
@@ -164,6 +173,16 @@ defmodule BlackjackCli.Views.Registration.State do
       {:error, message} ->
         update_errors(message)
         %{model | input: model.input, screen: :registration}
+    end
+  end
+
+  defp validate_email(email) do
+    case BlackjackCli.blank?(email) do
+      true ->
+        {:error, "email cannot be blank."}
+
+      _ ->
+        :ok
     end
   end
 
@@ -207,18 +226,24 @@ defmodule BlackjackCli.Views.Registration.State do
   defp delete_input(model) do
     case RegistrationForm.get_field(:tab_count) do
       0 ->
+        email = RegistrationForm.get_field(:email)
+
+        RegistrationForm.update_field(:email, "")
+        update_user(%{model | input: String.slice(email, 0..-2)})
+
+      1 ->
         username = RegistrationForm.get_field(:username)
 
         RegistrationForm.update_field(:username, "")
         update_user(%{model | input: String.slice(username, 0..-2)})
 
-      1 ->
+      2 ->
         password = RegistrationForm.get_field(:password)
 
         RegistrationForm.update_field(:password, "")
         update_user(%{model | input: String.slice(password, 0..-2)})
 
-      2 ->
+      3 ->
         password_confirmation = RegistrationForm.get_field(:password_confirmation)
 
         RegistrationForm.update_field(:password_confirmation, "")

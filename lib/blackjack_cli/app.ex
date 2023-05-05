@@ -17,26 +17,26 @@ defmodule BlackjackCli.App do
     Search,
     Dashboard,
     Menu,
-    Settings
+    Settings,
+    Friends,
+    Inbox,
+    FriendRequest
   }
 
   @impl true
   def init(_context), do: State.init()
 
   @impl true
-  def update(model, msg) do
-    updated_model = GuiServer.update_model(model)
-    State.update(updated_model, msg)
-  end
+  def update(model, msg), do: State.update(model, msg)
 
   @impl true
-  # def subscribe(%{key: nil}), do: Subscription.interval(50, :check_token)
+  # def subscribe(%{token: nil}), do: Subscription.interval(50, :check_token)
   def subscribe(_), do: Subscription.interval(100_000, :check_token)
 
   @impl true
-  def render(%{screen: :login, key: ""} = model), do: Login.render(model)
+  def render(%{screen: :login, token: ""} = model), do: Login.render(model)
 
-  def render(%{screen: :create_server, key: _, input: _} = model)
+  def render(%{screen: :create_server, token: _, input: _} = model)
       when is_bitstring(model.input),
       do: CreateServer.render(model)
 
@@ -55,4 +55,9 @@ defmodule BlackjackCli.App do
   def render(%{screen: :settings} = model), do: Settings.render(model)
   def render(%{screen: :start} = model), do: Start.render(model)
   def render(%{screen: :exit}), do: Application.stop(:blackjack_cli)
+  def render(%{screen: :friends} = model), do: Friends.render(model)
+  def render(%{screen: :inbox} = model), do: Inbox.render(model)
+  def render(%{screen: :inbox, input: 1} = model), do: Inbox.render(model)
+  def render(%{screen: :inbox, input: 2} = model), do: Inbox.render(model)
+  def render(%{screen: :friend_request} = model), do: FriendRequest.render(model)
 end

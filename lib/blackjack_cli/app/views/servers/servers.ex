@@ -3,9 +3,19 @@ defmodule BlackjackCli.Views.Servers do
 
   alias BlackjackCli.Views.Servers.State
 
-  def update(model, msg), do: State.update(model, msg)
+  def update(model, msg) do
+    State.update(model, msg)
+  end
 
   def render(model) do
+    %{"servers" => servers} =
+      model.data
+      |> Keyword.new()
+      # |> IO.inpsect(label: "MODEL DATA")
+      |> search_map([], "servers")
+
+    # |> IO.inpsect(label: "MODEL DATA")
+
     view do
       panel title: "BLACKJACK" do
         row do
@@ -13,11 +23,14 @@ defmodule BlackjackCli.Views.Servers do
             panel title: "SERVERS", height: 10 do
               viewport offset_y: scroll(model) do
                 if model.menu == false do
-                  model.data["servers"]
-                  |> Enum.sort_by(& &1["inserted_at"], :asc)
+                  servers
+                  |> Enum.sort_by(
+                    &(&1["inserted_at"] |> NaiveDateTime.from_iso8601!()),
+                    {:asc, NaiveDateTime}
+                  )
                   |> Enum.slice(
-                    max(model.input - length(model.data["servers"]), 0),
-                    min(model.input + 7, length(model.data["servers"]))
+                    max(model.input - length(servers), 0),
+                    min(model.input + 7, length(servers))
                   )
                   |> Enum.with_index(fn %{"server_name" => server_name}, index ->
                     if model.input == index do
@@ -31,8 +44,11 @@ defmodule BlackjackCli.Views.Servers do
                     end
                   end)
                 else
-                  model.data["servers"]
-                  |> Enum.sort_by(& &1["inserted_at"], :asc)
+                  servers
+                  |> Enum.sort_by(
+                    &(&1["inserted_at"] |> NaiveDateTime.from_iso8601!()),
+                    {:asc, NaiveDateTime}
+                  )
                   |> Enum.slice(0, 7)
                   |> Enum.map(fn %{"server_name" => server_name} ->
                     label(content: "#{server_name}")
@@ -45,23 +61,26 @@ defmodule BlackjackCli.Views.Servers do
           column size: 8 do
             panel title: "SERVER INFO", height: 10 do
               # if model.menu == false do
-              Enum.with_index(
-                model.data["servers"] |> Enum.sort_by(& &1["inserted_at"], :asc),
-                fn %{
-                     "server_name" => server_name,
-                     "player_count" => player_count,
-                     "table_count" => table_count
-                   },
-                   index ->
-                  if model.input == index do
-                    [
-                      label(content: "server_name: #{server_name}"),
-                      label(content: "player_count: #{player_count}"),
-                      label(content: "table_count: #{table_count}")
-                    ]
-                  end
-                end
+
+              servers
+              |> Enum.sort_by(
+                &(&1["inserted_at"] |> NaiveDateTime.from_iso8601!()),
+                {:asc, NaiveDateTime}
               )
+              |> Enum.with_index(fn %{
+                                      "server_name" => server_name,
+                                      "player_count" => player_count,
+                                      "table_count" => table_count
+                                    },
+                                    index ->
+                if model.input == index do
+                  [
+                    label(content: "server_name: #{server_name}"),
+                    label(content: "player_count: #{player_count}"),
+                    label(content: "table_count: #{table_count}")
+                  ]
+                end
+              end)
 
               # else
               #   Enum.with_index(
@@ -117,5 +136,26 @@ defmodule BlackjackCli.Views.Servers do
     if model.menu == false do
       model.input
     end
+  end
+
+  defp search_map([map | enum], _acc, key) do
+    case map do
+      {^key, _} = servers ->
+        # IO.puts("CATCH ALL")
+        [servers] |> Map.new()
+
+      {_k, v} when v |> is_map() ->
+        # IO.puts("IS MAP")
+
+        if v |> Map.has_key?(key) do
+          search_map(v |> Map.to_list(), v, key)
+        else
+          search_map(enum, enum, key)
+        end
+    end
+  end
+
+  defp search_map(map, [], key) do
+    if Map.has_key?(map, key), do: map |> Map.new(), else: :no_match
   end
 end

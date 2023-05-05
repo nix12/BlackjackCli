@@ -10,8 +10,6 @@ defmodule BlackjackCli.HttpClientSupervisor do
   end
 
   def child_spec(protocol) do
-    IO.inspect(protocol, label: "CHILD SPEC")
-
     %{
       id: "#{protocol}_client" |> String.to_atom(),
       start: {HttpClient, :start_link, [protocol]},
@@ -22,7 +20,6 @@ defmodule BlackjackCli.HttpClientSupervisor do
 
   @impl true
   def init(args) do
-    IO.puts("IN CLIENT SUPERVISOR")
     DynamicSupervisor.init(args)
   end
 end

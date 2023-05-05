@@ -16,29 +16,34 @@ defmodule BlackjackCli.App.State do
     Games,
     Search,
     Dashboard,
-    Menu
+    Menu,
+    Friends,
+    Inbox,
+    FriendRequest
   }
 
-  # @initial_state %{
-  #   input: 0,
-  #   menu: true,
-  #   user: nil,
-  #   screen: :start,
-  #   key: "",
-  #   data: []
-  # }
+  @initial_state %{
+    input: 0,
+    menu: true,
+    user: nil,
+    screen: :start,
+    token: "",
+    data: []
+  }
 
   def init() do
     # Process.register(self(), :gui)
-    %{body: body} = BlackjackCli.get_servers() |> IO.inspect(label: "GET SERVERS INIT")
+    # put_in(@initial_state.data, BlackjackCli.get_servers())
+    Registry.register(Registry.App, :gui, %{})
+   
 
-    GuiServer.update_model(%{data: body})
+    @initial_state
   end
 
   @spec update(map(), tuple()) :: map()
   def update(model, msg) do
     case {model, msg} do
-      {%{key: ""}, :check_token} ->
+      {%{token: ""}, :check_token} ->
         check_token(model)
 
       {%{screen: :start}, _} ->
@@ -74,7 +79,16 @@ defmodule BlackjackCli.App.State do
       {%{screen: :menu} = model, _} ->
         Menu.State.update(model, msg)
 
-      {%{key: ""} = model, _} ->
+      {%{screen: :friends} = model, _} ->
+        Friends.State.update(model, msg)
+
+      {%{screen: :inbox} = model, _} ->
+        Inbox.State.update(model, msg)
+
+      {%{screen: :friend_request} = model, _} ->
+        FriendRequest.State.update(model, msg)
+
+      {%{token: ""} = model, _} ->
         Start.State.update(model, msg)
 
       _ ->
@@ -83,8 +97,8 @@ defmodule BlackjackCli.App.State do
   end
 
   defp check_token(model) do
-    case model.key do
-      key when is_nil(key) == false or key != "" ->
+    case model.token do
+      token when is_nil(token) == false or token != "" ->
         model
 
       _ ->

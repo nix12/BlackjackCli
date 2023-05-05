@@ -35,9 +35,9 @@ defmodule BlackjackCli.Views.Login do
         panel title: "LOGIN" do
           row do
             column size: 6 do
-              panel title: "USERNAME" do
+              panel title: "EMAIL" do
                 label do
-                  text(content: LoginForm.get_field(:username))
+                  text(content: LoginForm.get_field(:email))
 
                   if tab_count == 0 do
                     text(content: "W", color: :white, background: :white)
